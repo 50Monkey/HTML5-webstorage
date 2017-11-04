@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>应用本地数据库实现留言本</title>
+    <style type="text/css" media="screen">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-size: 14px;
+            padding-top: 5px;
+            width: 740px;
+            margin: 0 auto;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <form action="#" method="get">
+        留 言 人：
+        <input type="text" id="name">
+        <br>
+        <br> 留言内容：
+        <textarea id="msg" cols="60" rows="10"></textarea>
+        <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="submit" id="save" value="保存留言" />
+        <input type="submit" id="clear" value="清除全部留言" />
+    </form>
+    <hr>
+    <script type="text/javascript" charset="utf-8">
+        function getE(ele) {
+            return document.getElementById(ele);
+        }
+        var datalist = getE('datalist');
+        if (!datalist) {
+            datalist = document.createElement('dl');
+            datalist.className = 'datalist';
+            datalist.id = 'datalist';
+            document.body.appendChild(datalist);
+        }
+        var result = getE('result');
+        var db = openDatabase('myData', '1.0', 'test database', 1024 * 1024);
+        showAllData()
+
+        db.transaction(function (tx) {
+            tx.executeSql('CREATE TABLE IF NOT EXISTS tb_msg(name TEXT,msg TEXT,time INTEGER)', []);
+
+        })
+        getE('clear').onclick = function () {
+            db.transaction(function (tx) {
+                tx.executeSql('DROP TABLE tb_msg', []);
+            })
+            showAllData()
+        }
+        getE('save').onclick = function () {
+            saveData();
+            return false;
+        }
+
+        function removeAllData() {
+            for (var i = datalist.children.length - 1; i >= 0; i--) {
+                datalist.removeChild(datalist.children[i]);
+            }
+        }
+
+        function showData(row) {
+            var dt = document.createElement('dt');
+            dt.innerHTML = row.name;
+            var dd = document.createElement('dd');
+            dd.innerHTML = row.msg;
+            var tt = document.createElement('tt');
+            var t = new Date();
+            t.setTime(row.time);
+            tt.innerHTML = t.toLocaleDateString() + " " + t.toLocaleTimeString();
+            datalist.appendChild(dt);
+            datalist.appendChild(dd);
+            datalist.appendChild(tt);
+        }
+
+        function showAllData() {
+
+            db.transaction(function (tx) {
+                tx.executeSql('CREATE TABLE IF NOT EXISTS tb_msg(name TEXT,msg TEXT,time INTEGER)', []);
+                tx.executeSql('SELECT * FROM tb_msg', [], function (tx, result) {
+                    removeAllData();
+                    for (var i = 0; i < result.rows.length; i++) {
+                        showData(result.rows.item(i));
+                    }
+                });
+            });
+        }
+
+        function addData(name, msg, time) {
+            db.transaction(function (tx) {
+                tx.executeSql('INSERT INTO tb_msg VALUES(?,?,?)', [name, msg, time], function (tx, result) {
+                        alert("留言信息已成功保存！");
+                    },
+                    function (tx, error) {
+                        alert(error.source + ':' + error.message);
+                    });
+            });
+        }
+
+        function saveData() {
+            var name = "留言人：" + getE('name').value;
+            var msg = "留言内容：" + getE('msg').value;
+            var time = new Date().getTime();
+            addData(name, msg, time);
+            showAllData();
+        }
+    </script>
+
+</body>
+
+</html>
